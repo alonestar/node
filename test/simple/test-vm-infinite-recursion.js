@@ -22,9 +22,15 @@
 // Flags: --stack-size=128
 
 var assert = require('assert');
-var vm = require('vm');
-var s = 'vm.runInNewContext(s, { vm: vm, s: s })';
 
-assert.throws(function() {
+if (process.argv.indexOf('child') !== -1) {
+  var vm = require('vm');
+  var s = 'vm.runInNewContext(s, { vm: vm, s: s })';
   eval(s);
-}, /Maximum call stack/);
+} else {
+  var spawn = require('child_process').spawn;
+  var child = spawn(process.execPath, process.execArgv.concat([__filename, 'child']));
+  child.on('close', function(code, signal) {
+    assert.notStrictEqual(code, 0, 'should have non-zero exit code');
+  });
+}
